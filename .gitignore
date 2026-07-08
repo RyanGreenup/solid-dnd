@@ -5,3 +5,4 @@ dist
 .history
 test-results
 playwright-report
+.codemap
