@@ -8,7 +8,17 @@ import {
 } from "./drag-drop-context";
 import { Transform } from "./layout";
 
-const createPointerSensor = (id: Id = "pointer-sensor"): void => {
+interface PointerSensorOptions {
+  // Milliseconds to hold still before a drag activates (long-press style).
+  activationDelay?: number;
+  // Pixels of pointer movement that activate a drag before the delay elapses.
+  activationDistance?: number;
+}
+
+const createPointerSensor = (
+  id: Id = "pointer-sensor",
+  options: PointerSensorOptions = {}
+): void => {
   const [
     state,
     {
@@ -21,14 +31,19 @@ const createPointerSensor = (id: Id = "pointer-sensor"): void => {
       dragEnd,
     },
   ] = useDragDropContext()!;
-  const activationDelay = 250; // milliseconds
-  const activationDistance = 10; // pixels
+  const activationDelay = options.activationDelay ?? 250; // milliseconds
+  const activationDistance = options.activationDistance ?? 10; // pixels
 
   onMount(() => {
     addSensor({ id, activators: { pointerdown: attach } });
   });
 
   onCleanup(() => {
+    // Tear down any in-flight drag listeners/timer before removing the sensor,
+    // otherwise unmounting mid-drag (route change, item filtered out of a list)
+    // leaks document listeners and the pending activation timeout until the
+    // next pointerup, which may never come.
+    detach();
     removeSensor(id);
   });
 
@@ -38,14 +53,20 @@ const createPointerSensor = (id: Id = "pointer-sensor"): void => {
 
   let activationDelayTimeoutId: number | null = null;
   let activationDraggableId: Id | null = null;
+  let activationPointerType: string = "";
 
   const attach: SensorActivator<"pointerdown"> = (event, draggableId) => {
     if (event.button !== 0) return;
 
     document.addEventListener("pointermove", onPointerMove);
     document.addEventListener("pointerup", onPointerUp);
+    document.addEventListener("pointercancel", onPointerCancel);
+    // Suppress the iOS/Safari long-press callout and context menu that would
+    // otherwise fire mid-drag and steal the gesture.
+    document.addEventListener("contextmenu", onContextMenu);
 
     activationDraggableId = draggableId;
+    activationPointerType = event.pointerType;
     initialCoordinates.x = event.clientX;
     initialCoordinates.y = event.clientY;
 
@@ -60,6 +81,8 @@ const createPointerSensor = (id: Id = "pointer-sensor"): void => {
 
     document.removeEventListener("pointermove", onPointerMove);
     document.removeEventListener("pointerup", onPointerUp);
+    document.removeEventListener("pointercancel", onPointerCancel);
+    document.removeEventListener("contextmenu", onContextMenu);
     document.removeEventListener("selectionchange", clearSelection);
   };
 
@@ -85,7 +108,14 @@ const createPointerSensor = (id: Id = "pointer-sensor"): void => {
       };
 
       if (Math.sqrt(transform.x ** 2 + transform.y ** 2) > activationDistance) {
-        onActivate();
+        if (activationPointerType === "touch") {
+          // Moving a touch before the long-press delay elapses is a scroll,
+          // not a drag. Abort the pending activation and let the browser (and
+          // pointercancel) take over so the list scrolls normally.
+          detach();
+        } else {
+          onActivate();
+        }
       }
     }
 
@@ -104,9 +134,27 @@ const createPointerSensor = (id: Id = "pointer-sensor"): void => {
     }
   };
 
+  const onPointerCancel = (event: PointerEvent): void => {
+    // The OS or browser reclaimed the pointer (scroll takeover, incoming call,
+    // gesture, app switch). End any active drag cleanly so it cannot get stuck.
+    detach();
+    if (isActiveSensor()) {
+      event.preventDefault();
+      dragEnd();
+      sensorEnd();
+    }
+  };
+
+  const onContextMenu = (event: Event): void => {
+    if (isActiveSensor()) {
+      event.preventDefault();
+    }
+  };
+
   const clearSelection = () => {
     window.getSelection()?.removeAllRanges();
   };
 };
 
 export { createPointerSensor };
+export type { PointerSensorOptions };
