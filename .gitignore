@@ -3,3 +3,5 @@ types
 dist
 .vscode
 .history
+test-results
+playwright-report

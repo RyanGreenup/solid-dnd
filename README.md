@@ -126,6 +126,17 @@ auto-scroll sensor. A few notes for reliable touch behaviour:
   `scrollSensor={{ threshold: 40, maxSpeed: 20 }}`, or disable with
   `scrollSensor={false}`.
 
+- **Contain scroll to the list.** Give any scrollable drag-and-drop region
+  `overscroll-behavior: contain` so that reaching its top/bottom edge does not
+  chain-scroll the outer page (the conventional UX for a scrollable list):
+
+  ```css
+  .my-sortable-list {
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+  ```
+
 - Interrupted touches (`pointercancel`: OS gestures, incoming calls, app
   switches) end the drag cleanly rather than leaving it stuck.
 

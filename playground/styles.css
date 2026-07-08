@@ -168,6 +168,10 @@ body {
   border-radius: 10px;
   padding: 8px;
   -webkit-overflow-scrolling: touch;
+  /* Keep scrolling contained to this region: when it reaches its top/bottom
+     edge, do not chain the overflow into the outer page (conventional UX for a
+     scrollable drag-and-drop region). */
+  overscroll-behavior: contain;
 }
 
 .empty {
