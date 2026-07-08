@@ -1,5 +1,33 @@
 # Changelog
 
+## [Unreleased]
+
+### Fixed
+
+- Pointer sensor no longer leaks document listeners or the pending activation
+  timer when a draggable unmounts mid-drag (route change, or the dragged item
+  being filtered out of a list). Cleanup now detaches before removing the sensor.
+- Handle `pointercancel` so an interrupted touch (OS gesture, incoming call, app
+  switch, iOS callout) ends the drag cleanly instead of leaving it stuck.
+
+### Added
+
+- Configurable pointer activation via `createPointerSensor(id, { activationDelay,
+  activationDistance })`, forwarded from `DragDropSensors` as the `pointerSensor`
+  prop.
+- `pointerType`-aware activation: on touch, movement before the activation delay
+  is treated as a scroll so a swipe scrolls and a short hold starts a drag.
+- iOS/Safari context-menu suppression while a drag is active.
+- `createScrollSensor` for edge auto-scroll during a drag, plus layout recompute
+  on scroll so drop targets stay correct while a container scrolls. Included in
+  `DragDropSensors` by default; configure via `scrollSensor` or disable with
+  `scrollSensor={false}`.
+- `dragHandleTouchStyle` and `applyDragHandleTouch` helpers to make a drag handle
+  reliably draggable by touch (`touch-action: none` plus callout/selection
+  suppression).
+- Test suite (vitest + jsdom) covering collision, layout and array-move logic,
+  and regression tests for the sensor listener leak and `pointercancel` cleanup.
+
 ## [0.7.5] - 2023-11-17
 
 ### Fixed

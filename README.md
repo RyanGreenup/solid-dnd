@@ -81,6 +81,61 @@ export default App;
 
 See more examples at https://solid-dnd.com
 
+## Touch, iPad and mobile 📱
+
+`DragDropSensors` ships a pointer sensor (mouse, pen and touch) and an
+auto-scroll sensor. A few notes for reliable touch behaviour:
+
+- **Use a drag handle** and make it touch-ready so the rest of the row stays
+  scrollable. Spread `dragHandleTouchStyle` (or call `applyDragHandleTouch`) onto
+  the element that carries the drag activators. This sets `touch-action: none`
+  and suppresses the iOS long-press callout / text selection that otherwise
+  fights the drag.
+
+  ```jsx
+  import { createSortable, dragHandleTouchStyle } from "@thisbeyond/solid-dnd";
+
+  const Item = (props) => {
+    const sortable = createSortable(props.id);
+    return (
+      <div use:sortable>
+        <span
+          class="handle"
+          style={dragHandleTouchStyle}
+          {...sortable.dragActivators}
+        >
+          drag
+        </span>
+        {props.id}
+      </div>
+    );
+  };
+  ```
+
+- **Tune activation** without forking the sensor via `DragDropSensors`:
+
+  ```jsx
+  <DragDropSensors pointerSensor={{ activationDelay: 250, activationDistance: 10 }}>
+  ```
+
+  On touch, moving beyond `activationDistance` before `activationDelay` elapses
+  is treated as a scroll (the drag is abandoned), so a quick swipe scrolls and a
+  short hold picks the item up.
+
+- **Auto-scroll** near a scroll container's edge is on by default. Tune it with
+  `scrollSensor={{ threshold: 40, maxSpeed: 20 }}`, or disable with
+  `scrollSensor={false}`.
+
+- Interrupted touches (`pointercancel`: OS gestures, incoming calls, app
+  switches) end the drag cleanly rather than leaving it stuck.
+
+## Known limitations
+
+- **No keyboard or screen-reader dragging yet.** The only input path is the
+  pointer sensor; there is no keyboard sensor, focus management or ARIA live
+  announcements. If you have accessibility requirements, plan to add a keyboard
+  sensor on top of these primitives.
+
 ## What's implemented? ✔️
 
 - [x] Use `createDraggable` with your elements to easily integrate drag
