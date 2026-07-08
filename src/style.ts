@@ -21,4 +21,36 @@ const maybeTransformStyle = (transform: Transform): JSX.CSSProperties => {
     : transformStyle(transform);
 };
 
-export { layoutStyle, transformStyle, maybeTransformStyle };
+// Styles that make an element reliably draggable by touch. Spread onto the
+// element that carries the drag activators (a dedicated drag handle is the
+// recommended pattern so the rest of the row stays scrollable):
+//
+//   <div use:draggable style={dragHandleTouchStyle}> ... a handle ... </div>
+//
+// - touch-action: none  -> the browser never claims the gesture for scrolling,
+//   so a drag starts reliably instead of the page panning.
+// - -webkit-touch-callout: none + user-select: none -> suppress the iOS
+//   long-press callout and text selection that otherwise fight the drag.
+const dragHandleTouchStyle: JSX.CSSProperties = {
+  "touch-action": "none",
+  "-webkit-touch-callout": "none",
+  "user-select": "none",
+  "-webkit-user-select": "none",
+};
+
+// Imperative equivalent of dragHandleTouchStyle for cases where you hold an
+// element reference rather than spreading a style object.
+const applyDragHandleTouch = (element: HTMLElement): void => {
+  element.style.touchAction = "none";
+  element.style.setProperty("-webkit-touch-callout", "none");
+  element.style.userSelect = "none";
+  element.style.setProperty("-webkit-user-select", "none");
+};
+
+export {
+  layoutStyle,
+  transformStyle,
+  maybeTransformStyle,
+  dragHandleTouchStyle,
+  applyDragHandleTouch,
+};
